@@ -30,9 +30,6 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
-    "paths": {
-      "/src/*": ["src/*"]
-    },
     "types": ["node"]
   }
 }
