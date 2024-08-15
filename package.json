@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --watch src/main.ts",
-    "build": "tsc --outDir ./dist  ./src/main.ts",
+    "build": "tsc --outDir ./dist ./src/main.ts",
+    "build:script:update-user-details": "tsc --outDir ./scripts ./src/scripts/update-user-details.ts",
+    "script:update-user-details": "node ./scripts/update-user-details.ts",
     "start": "node dist/index.js",
     "format": "npx prettier . --write",
     "prepare": "husky"

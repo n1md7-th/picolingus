@@ -12,10 +12,10 @@ export const Counter = (start = 0) => {
   };
 };
 
-export const Emoji = (emojis: readonly string[]) => {
+export const Randomizer = (content: readonly string[]) => {
   return {
     getRandom() {
-      return emojis[randIntId(emojis.length)];
+      return content[randIntId(content.length)];
     },
   };
 };

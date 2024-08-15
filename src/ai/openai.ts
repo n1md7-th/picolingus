@@ -1,12 +1,11 @@
 import OpenAI from "openai";
 import { Counter } from "../utils/rand";
+type Message = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
 const openai = new OpenAI();
 
-type Message = OpenAI.Chat.Completions.ChatCompletionMessageParam;
-export const createConversation = (enabled = true) => {
-  const counter = Counter(2);
-  const messages: Message[] = [
+const strategies = {
+  grammarly: [
     {
       role: "system",
       content:
@@ -27,13 +26,49 @@ export const createConversation = (enabled = true) => {
       content:
         "Text output is meant for Discord. So you can use markdown if needed.",
     },
-  ];
+  ] as Message[],
+  conversation: [
+    {
+      role: "system",
+      content:
+        "You are a helpful assistant. Your task is to engage in a conversation with the user.",
+    },
+    {
+      role: "system",
+      content:
+        "Your name is Pico. You are 31 years old male. You are a professional JS/TS full-stack developer, anime and music lover.",
+    },
+    {
+      role: "system",
+      content: "Try to make the conversation engaging and interesting.",
+    },
+    {
+      role: "system",
+      content: "Do not over-explain or provide unnecessary information.",
+    },
+    {
+      role: "system",
+      content:
+        "Text output is meant for Discord. So you can use markdown if needed.",
+    },
+  ] as Message[],
+};
+
+type Strategies = keyof typeof strategies;
+
+export const createConversation = (strategy: Strategies, enabled = true) => {
+  const counter = Counter(2);
+  const maxQuota = Counter(10);
+  const messages: Message[] = strategies[strategy];
 
   const hasReachedLimit = () => {
-    return counter.val() >= 10;
+    return counter.val() >= maxQuota.val();
   };
 
   return {
+    strategy() {
+      return strategy;
+    },
     isDisabled() {
       return !enabled;
     },
@@ -44,7 +79,7 @@ export const createConversation = (enabled = true) => {
       enabled = false;
     },
     extendQuota() {
-      counter.add(5);
+      maxQuota.add(5);
     },
     hasReachedLimit() {
       return hasReachedLimit();
@@ -75,22 +110,30 @@ export const createConversation = (enabled = true) => {
   };
 };
 
-const ai = new Map<string, ReturnType<typeof createConversation>>();
-export const addByThreadId = (threadId: string) => {
-  const conversation = createConversation();
+export type Conversation = ReturnType<typeof createConversation>;
+export const ai = new Map<string, Conversation>();
+export const addByThreadId = (strategy: Strategies, threadId: string) => {
+  const conversation = createConversation(strategy);
 
   ai.set(threadId, conversation);
 
   return conversation;
 };
 
-const getByThreadId = (threadId: string) => {
+export const getByThreadId = (threadId: string) => {
   return ai.get(threadId);
 };
 
-export const getOrCreateByThreadId = (threadId: string) => {
+export const hasThreadId = (threadId: string) => {
+  return ai.has(threadId);
+};
+
+export const getOrCreateByThreadId = (
+  strategy: Strategies,
+  threadId: string,
+) => {
   const conversation = getByThreadId(threadId);
   if (conversation) return conversation;
 
-  return addByThreadId(threadId);
+  return addByThreadId(strategy, threadId);
 };
