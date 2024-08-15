@@ -4,7 +4,7 @@ import { Counter } from "../utils/rand";
 const openai = new OpenAI();
 
 type Message = OpenAI.Chat.Completions.ChatCompletionMessageParam;
-export const createConversation = () => {
+export const createConversation = (enabled = true) => {
   const counter = Counter(2);
   const messages: Message[] = [
     {
@@ -29,7 +29,26 @@ export const createConversation = () => {
     },
   ];
 
+  const hasReachedLimit = () => {
+    return counter.val() >= 10;
+  };
+
   return {
+    isDisabled() {
+      return !enabled;
+    },
+    enable() {
+      enabled = true;
+    },
+    disable() {
+      enabled = false;
+    },
+    extendQuota() {
+      counter.add(5);
+    },
+    hasReachedLimit() {
+      return hasReachedLimit();
+    },
     addUserMessage(content: string) {
       counter.inc();
       messages.push({
@@ -38,7 +57,7 @@ export const createConversation = () => {
       } as Message);
     },
     async sendRequest(): Promise<string> {
-      if (counter.val() >= 10) {
+      if (hasReachedLimit()) {
         return "I'm sorry, that is too many messages for this conversation.";
       }
 

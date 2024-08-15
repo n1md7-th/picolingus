@@ -8,5 +8,14 @@ export const Counter = (start = 0) => {
   return {
     inc: () => count++,
     val: () => count,
+    add: (val: number) => (count += val),
+  };
+};
+
+export const Emoji = (emojis: readonly string[]) => {
+  return {
+    getRandom() {
+      return emojis[randIntId(emojis.length)];
+    },
   };
 };

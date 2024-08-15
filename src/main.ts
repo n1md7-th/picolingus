@@ -8,11 +8,12 @@ import {
 import { addByThreadId, getOrCreateByThreadId } from "./ai/openai";
 import { token } from "./config";
 import { Logger } from "./utils/logger";
-import { Counter } from "./utils/rand";
+import { Counter, Emoji } from "./utils/rand";
 
 const counter = Counter();
 const logger = Logger();
 const openBookEmoji = "📖";
+const emoji = Emoji(["👍", "🤔", "🧐", "🙃", "🫡", "🫶", "🙂"]);
 
 const client = new Client({
   intents: [
@@ -40,11 +41,33 @@ client.on("messageCreate", async (message) => {
 
   // Channel.id is a thread id when it is a thread
   const conversation = getOrCreateByThreadId(message.channel.id);
+  if (message.content.startsWith("!disable")) {
+    conversation.disable();
+    logger.info("AI is disabled");
+  }
+
+  if (message.content.startsWith("!enable")) {
+    conversation.enable();
+    logger.info("AI is enabled");
+  }
+
+  if (message.content.startsWith("!extend")) {
+    conversation.extendQuota(); // 5 more messages
+    logger.info("Quota extended");
+  }
+
+  if (conversation.isDisabled()) return;
+  if (conversation.hasReachedLimit()) return;
+
+  if (message.content.endsWith("!disable")) {
+    conversation.disable();
+    logger.info("AI is disabled");
+  }
 
   logger.info(`[${message.author.username}]: ${message.content}`);
 
   await message.channel.sendTyping();
-  await message.react("👍");
+  await message.react(emoji.getRandom());
 
   conversation.addUserMessage(message.content);
   const response = await conversation.sendRequest();
