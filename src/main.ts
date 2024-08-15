@@ -29,14 +29,16 @@ const client = new Client({
 client.once("ready", (client) => {
   logger.info("Discord bot is ready! 🤖");
   client.user.setStatus("online");
-  client.user.setActivity("your grammar", { type: ActivityType.Watching });
+  client.user.setActivity("grammar & your GF", {
+    type: ActivityType.Watching,
+  });
 });
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (!message.channel.isThread()) return;
 
-  // Channel is a thread id when it is a thread
+  // Channel.id is a thread id when it is a thread
   const conversation = getOrCreateByThreadId(message.channel.id);
 
   logger.info(`[${message.author.username}]: ${message.content}`);
