@@ -40,10 +40,7 @@ client.on("messageCreate", async (message) => {
   if (!message.channel.isThread()) return;
   if (message.content.startsWith("!skip")) return;
 
-  const conversation = getOrCreateByThreadId(
-    "conversation",
-    message.channel.id,
-  );
+  const conversation = getOrCreateByThreadId("grammarly", message.channel.id);
 
   logger.info(
     `[${conversation.strategy()}] ${message.author.username}: ${message.content}`,
