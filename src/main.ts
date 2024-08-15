@@ -5,7 +5,7 @@ import {
   GatewayIntentBits,
   ThreadAutoArchiveDuration,
 } from "discord.js";
-import { addByThreadId, getByThreadId } from "./ai/openai";
+import { addByThreadId, getOrCreateByThreadId } from "./ai/openai";
 import { token } from "./config";
 import { Logger } from "./utils/logger";
 import { Counter, Randomizer } from "./utils/rand";
@@ -37,40 +37,13 @@ client.once("ready", async (client) => {
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
+  if (!message.channel.isThread()) return;
   if (message.content.startsWith("!skip")) return;
 
-  const isPicoConversationFirstTime =
-    message.content.startsWith("!Pico") || message.content.startsWith("!pico");
-  let conversation = getByThreadId(message.channel.id);
-  if (!conversation) {
-    // Create a new conversation for the channel
-    const strategy = isPicoConversationFirstTime ? "conversation" : "grammarly";
-
-    const thread = await message.startThread({
-      name: "Correction " + counter.inc().toString().padStart(3, "0"),
-      autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
-      reason: "User requested a interaction",
-    });
-    logger.info(`Thread created: ${thread.id}`);
-    conversation = addByThreadId(strategy, thread.id);
-    if (message.channel.isThread()) return;
-
-    try {
-      await Promise.all([
-        message.channel.sendTyping(),
-        message.react(emoji.getRandom()),
-      ]);
-
-      conversation.addUserMessage(message.content);
-      const response = await conversation.sendRequest();
-      await thread.send(response);
-    } catch (error) {
-      logger.error("Error sending message:", error);
-    }
-    return;
-  }
-
-  if (!conversation) return;
+  const conversation = getOrCreateByThreadId(
+    "conversation",
+    message.channel.id,
+  );
 
   logger.info(
     `[${conversation.strategy()}] ${message.author.username}: ${message.content}`,
