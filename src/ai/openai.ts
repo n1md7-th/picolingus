@@ -1,8 +1,11 @@
 import OpenAI from "openai";
+import { openAiApiKey } from "../config";
 import { Counter } from "../utils/rand";
 type Message = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
-const openai = new OpenAI();
+const openai = new OpenAI({
+  apiKey: openAiApiKey,
+});
 
 const strategies = {
   grammarly: [
