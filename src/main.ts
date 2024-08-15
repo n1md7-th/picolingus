@@ -1,4 +1,5 @@
 import {
+  ActivityType,
   Client,
   Events,
   GatewayIntentBits,
@@ -6,9 +7,12 @@ import {
 } from "discord.js";
 import { addByThreadId, getOrCreateByThreadId } from "./ai/openai";
 import { token } from "./config";
+import { Logger } from "./utils/logger";
 import { Counter } from "./utils/rand";
 
 const counter = Counter();
+const logger = Logger();
+const openBookEmoji = "📖";
 
 const client = new Client({
   intents: [
@@ -22,8 +26,10 @@ const client = new Client({
   ],
 });
 
-client.once("ready", () => {
-  console.log("Discord bot is ready! 🤖");
+client.once("ready", (client) => {
+  logger.info("Discord bot is ready! 🤖");
+  client.user.setStatus("online");
+  client.user.setActivity("your grammar", { type: ActivityType.Watching });
 });
 
 client.on("messageCreate", async (message) => {
@@ -33,7 +39,7 @@ client.on("messageCreate", async (message) => {
   // Channel is a thread id when it is a thread
   const conversation = getOrCreateByThreadId(message.channel.id);
 
-  console.info(`[${message.author.username}]: ${message.content}`);
+  logger.info(`[${message.author.username}]: ${message.content}`);
 
   await message.channel.sendTyping();
   await message.react("👍");
@@ -44,40 +50,41 @@ client.on("messageCreate", async (message) => {
 });
 
 client.on("messageReactionAdd", async (reaction, user) => {
-  if (user.bot) return;
-
-  console.info(
+  logger.info(
     `The user [${user.username}] added reaction ${reaction.emoji.name}`,
   );
-  if (reaction.emoji.name === "📖") {
-    await reaction.message.channel.sendTyping();
-    const thread = await reaction.message.startThread({
-      name: "Correction " + counter.val().toString().padStart(3, "0"),
-      autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
-      reason: "User requested a correction",
-    });
-    console.info(`Thread created: ${thread.id}`);
-    const conversation = addByThreadId(thread.id);
-    conversation.addUserMessage(reaction.message.content || "");
-    try {
-      const response = await conversation.sendRequest();
-      await thread.send(response);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      await thread.send("I'm sorry, something went wrong.");
-    }
+
+  if (user.bot) return;
+  if (reaction.emoji.name !== openBookEmoji) return;
+  if (!reaction.message.content) return;
+
+  await reaction.message.channel.sendTyping();
+  const thread = await reaction.message.startThread({
+    name: "Correction " + counter.val().toString().padStart(3, "0"),
+    autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
+    reason: "User requested a correction",
+  });
+  logger.info(`Thread created: ${thread.id}`);
+  const conversation = addByThreadId(thread.id);
+  conversation.addUserMessage(reaction.message.content);
+  try {
+    const response = await conversation.sendRequest();
+    await thread.send(response);
+  } catch (error) {
+    logger.error("Error sending message:", error);
+    await thread.send("I'm sorry, something went wrong.");
   }
 });
 
 client.once(Events.ClientReady, (readyClient) => {
-  console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+  logger.info(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
 client
   .login(token)
   .then(() => {
-    console.log("Logged in!");
+    logger.info("Logged in!");
   })
   .catch((error) => {
-    console.error("Error logging in:", error);
+    logger.error("Error logging in:", error);
   });
